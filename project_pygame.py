@@ -217,39 +217,52 @@ def game():
                     if _.get_event(event)[0]:
                         if first:
                             x1, y1 = _.get_event(event)[1], _.get_event(event)[2]
-                            _.image = pygame.transform.scale(_.image, (85, 85))
-                            last = _
-                            first = False
-                            break
+                            if loaded_level[int(y1)][int(x1)] != '':
+                                _.image = load_image(lightning_tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                last = _
+                                first = False
+                                break
                         else:
                             x2, y2 = _.get_event(event)[1], _.get_event(event)[2]
                             if (x1, y1) == (x2, y2):
-                                _.image = pygame.transform.scale(_.image, (79, 79))
-                                last.image = pygame.transform.scale(last.image, (79, 79))
+                                if loaded_level[int(y1)][int(x1)] != '' and (
+                                    loaded_level[int(y2)][int(x2)] != ''):
+                                    _.image = load_image(tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                    last.image = load_image(tile_images[int(loaded_level[int(y2)][int(x2)])])
                                 first = True
                             elif (x1 + 1 == x2 and y1 == y2) or (
                                 x1 - 1 == x2 and y1 == y2) or (
                                     x1 == x2 and y1 + 1 == y2) or (
                                         x1 == x2 and y1 - 1 == y2):
-                                _.image = pygame.transform.scale(_.image, (79, 79))
-                                last.image = pygame.transform.scale(last.image, (79, 79))
-                                new_loaded_level = change((x1, y1), (x2, y2),
-                                                      loaded_level, _, last,
-                                                      moves, goals)
-                                loaded_level = copy.deepcopy(new_loaded_level)
-                                loaded_level = destruction(loaded_level)
-                                tiles_group.empty()
-                                generate_level(loaded_level)
-                                _.image = pygame.transform.scale(_.image, (79, 79))
-                                last.image = pygame.transform.scale(last.image, (79, 79))
-                                last = _
-                                first = True
+                                if loaded_level[int(y1)][int(x1)] != '' and (
+                                    loaded_level[int(y2)][int(x2)] != ''):
+                                    _.image = load_image(tile_images[int(loaded_level[int(y2)][int(x2)])])
+                                    last.image = load_image(tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                    new_loaded_level = change((x1, y1), (x2, y2),
+                                                          loaded_level, _, last,
+                                                          moves, goals)
+                                    loaded_level = copy.deepcopy(new_loaded_level)
+                                    while is_there_a_combination(loaded_level):
+                                        loaded_level, goals = destruction(loaded_level, goals)
+                                        tiles_group.empty()
+                                        generate_level(loaded_level)
+                                        loaded_level = falling(loaded_level, moves, goals)
+                                    if loaded_level != new_loaded_level:
+                                        moves = str(int(moves) - 1)
+                                    tiles_group.empty()
+                                    generate_level(loaded_level)
+                                    if loaded_level[int(y1)][int(x1)] != '' and (loaded_level[int(y2)][int(x2)] != ''):
+                                        _.image = load_image(tile_images[int(loaded_level[int(y2)][int(x2)])])
+                                        last.image = load_image(tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                    last = _
+                                    first = True
                             else:
-                                last.image = pygame.transform.scale(last.image, (79, 79))
-                                x1, y1 = _.get_event(event)[1], _.get_event(event)[2]
-                                _.image = pygame.transform.scale(_.image, (85, 85))
-                                last = _
-                                first = False
+                                if loaded_level[int(y1)][int(x1)] != '' and (loaded_level[int(y2)][int(x2)] != ''):
+                                    last.image = load_image(tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                    x1, y1 = _.get_event(event)[1], _.get_event(event)[2]
+                                    _.image = load_image(lightning_tile_images[int(loaded_level[int(y1)][int(x1)])])
+                                    last = _
+                                    first = False
                             break
 
 
@@ -296,15 +309,23 @@ def game():
         intro_rect.x = 720
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
+        done_group.empty()
         for i in range(len(goals)):
-            string_rendered = font2.render(str(goals[i].split()[0]), 1,
-                                          pygame.Color('yellow'))
-            intro_rect = string_rendered.get_rect()
-            text_coord = 300 + 100 * i
-            intro_rect.top = text_coord
-            intro_rect.x = 720
-            text_coord += intro_rect.height
-            screen.blit(string_rendered, intro_rect)
+            if goals[i].split()[0] != '0':
+                string_rendered = font2.render(str(goals[i].split()[0]), 1,
+                                              pygame.Color('yellow'))
+                intro_rect = string_rendered.get_rect()
+                text_coord = 300 + 100 * i
+                intro_rect.top = text_coord
+                intro_rect.x = 720
+                text_coord += intro_rect.height
+                screen.blit(string_rendered, intro_rect)
+            else:
+                done = pygame.sprite.Sprite(all_sprites, done_group)
+                done.image = load_image('done.png')
+                done.rect = done.image.get_rect()
+                done.rect.x = 720
+                done.rect.y = 290 + 100 * i
         string_rendered = font.render(str(points), 1,
                                   pygame.Color('yellow'))
         intro_rect = string_rendered.get_rect()
@@ -317,10 +338,12 @@ def game():
         moneta_group.draw(screen)
         goal_group.draw(screen)
         tiles_group.draw(screen)
+        done_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
 def change(first, second, loaded_level, cur, last, moves, goals):
+    #print('i am in change')
     with open('data/' + 'current_money.txt', 'r') as m:
         money = m.read()
     with open('data/' + 'current_lifes.txt', 'r') as l:
@@ -352,8 +375,10 @@ def change(first, second, loaded_level, cur, last, moves, goals):
         elif y2 < y1:
             cur.rect = cur.rect.move(0, 1)
             last.rect = last.rect.move(0, -1)
-        cur.image = pygame.transform.scale(cur.image, (79, 79))
-        last.image = pygame.transform.scale(last.image, (79, 79))
+        if loaded_level[int(y1)][int(x1)] != '' and (
+            loaded_level[int(y2)][int(x2)] != ''):
+            cur.image = load_image(tile_images[int(loaded_level[int(y2)][int(x2)])])
+            last.image = load_image(tile_images[int(loaded_level[int(y1)][int(x1)])])
         screen.fill((255, 255, 255))
         screen.blit(fon, (0, 0))
         string_rendered = font.render(str(lifes), 1, pygame.Color('black'))
@@ -396,15 +421,23 @@ def change(first, second, loaded_level, cur, last, moves, goals):
         intro_rect.x = 720
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
+        done_group.empty()
         for i in range(len(goals)):
-            string_rendered = font2.render(str(goals[i].split()[0]), 1,
-                                          pygame.Color('yellow'))
-            intro_rect = string_rendered.get_rect()
-            text_coord = 300 + 100 * i
-            intro_rect.top = text_coord
-            intro_rect.x = 720
-            text_coord += intro_rect.height
-            screen.blit(string_rendered, intro_rect)
+            if goals[i].split()[0] != '0':
+                string_rendered = font2.render(str(goals[i].split()[0]), 1,
+                                              pygame.Color('yellow'))
+                intro_rect = string_rendered.get_rect()
+                text_coord = 300 + 100 * i
+                intro_rect.top = text_coord
+                intro_rect.x = 720
+                text_coord += intro_rect.height
+                screen.blit(string_rendered, intro_rect)
+            else:
+                done = pygame.sprite.Sprite(all_sprites, done_group)
+                done.image = load_image('done.png')
+                done.rect = done.image.get_rect()
+                done.rect.x = 720
+                done.rect.y = 290 + 100 * i
         string_rendered = font.render(str(points), 1,
                                   pygame.Color('yellow'))
         intro_rect = string_rendered.get_rect()
@@ -417,6 +450,7 @@ def change(first, second, loaded_level, cur, last, moves, goals):
         moneta_group.draw(screen)
         goal_group.draw(screen)
         tiles_group.draw(screen)
+        done_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
         if pr_coords == (last.rect):
@@ -426,13 +460,11 @@ def change(first, second, loaded_level, cur, last, moves, goals):
     m = loaded_level[y2][x2]
     temp_level[y1][x1] = m
     temp_level[y2][x2] = k
-    if is_where_a_combination(temp_level):
+    if is_there_a_combination(temp_level):
         return temp_level
     else:
         pr_coords = (cur.rect)
         moving = True
-        last.image = pygame.transform.scale(last.image, (79, 79))
-        cur.image = pygame.transform.scale(cur.image, (79, 79))
         while moving:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -501,6 +533,14 @@ def change(first, second, loaded_level, cur, last, moves, goals):
                 intro_rect.x = 720
                 text_coord += intro_rect.height
                 screen.blit(string_rendered, intro_rect)
+            string_rendered = font.render(str(points), 1,
+                                  pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 30
+            intro_rect.top = text_coord
+            intro_rect.x = 250
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
             heart_group.draw(screen)
             moneta_group.draw(screen)
             goal_group.draw(screen)
@@ -512,7 +552,8 @@ def change(first, second, loaded_level, cur, last, moves, goals):
         return loaded_level
 
 
-def is_where_a_combination(level):
+def is_there_a_combination(level):
+    #print('i am in is_there_a_combination')
     horizontal = [''.join(i) for i in level]
     vertical = []
     for i in range(len(level[0])):
@@ -533,46 +574,171 @@ def is_where_a_combination(level):
     return False
 
 
-def destruction(level):
+def destruction(level, goals):
     global points
-    while True:
-        if is_where_a_combination(level):
-            for i in range(len(level)):
-                for j in range(len(level[0])):
-                    fruit = level[i][j]
-                    kolvo = 1
-                    if fruit != '':
-                        try:
-                            if level[i][j + 1] == fruit:
-                                kolvo = 2
-                                if level[i][j + 2] == fruit:
-                                    kolvo = 3
-                                    if level[i][j + 3] == fruit:
-                                        kolvo = 4
-                                        if level[i][j + 4] == fruit:
-                                            kolvo = 5
-                                            if level[i][j + 5] == fruit:
-                                                kolvo = 6
-                                                if level[i][j + 6] == fruit:
-                                                    kolvo = 7
-                                                    if level[i][j + 7] == fruit:
-                                                        kolvo = 8
-                        except IndexError:
-                            pass
-                        if kolvo > 2:
-                            for _ in range(kolvo):
-                                level[i][j + _] = ''
-                            points += kolvo * 100
-                            return level
-            return level
-        else:
-            return level
+    if is_there_a_combination(level):
+        all_combo = []
+        for i in range(len(level)):
+            for j in range(len(level[0])):
+                fruit = level[i][j]
+                kolvo = 1
+                if fruit != '':
+                    h = check_seq(level, i, j, 0)
+                    v = check_seq(level, i, j, 1)
+                    if h > 2:
+                        for _ in range(h):
+                            if (i, j + _) not in all_combo:
+                                all_combo.append((i, j + _))
+                    if v > 2:
+                        for _ in range(v):
+                            if (i + _, j) not in all_combo:
+                                all_combo.append((i + _, j))
+        for _ in all_combo:
+            for i in range(len(goals)):
+                if goals[i].split()[1] == level[_[0]][_[1]] and goals[i].split()[0] != '0':
+                    goals[i] = str(int(goals[i].split()[0]) - 1) +  ' ' + goals[i].split()[1]
+            level[_[0]][_[1]] = ''
+        points += len(all_combo) * 100
+        return level, goals
+    else:
+        return level, goals
 
-def check_seq(level, i, j, k = 1):
-    if j > len(level[i]) - 1 and level[i][j] == level[i][j + 1]:
-        k += 1
-        k = check_seq(level, i, j + 1, k)
+
+def check_seq(level, i, j, d = 0, k = 1):
+    #print('i am in check_seq')
+    if d == 0:
+        if j < len(level[i]) - 1 and level[i][j] == level[i][j + 1]:
+            k += 1
+            k = check_seq(level, i, j + 1, d, k)
+    elif d == 1:
+        if i < len(level) - 1 and level[i][j] == level[i + 1][j]:
+            k += 1
+            k = check_seq(level, i + 1, j, d, k)
     return k
+
+
+def falling(loaded_level, moves, goals):
+    with open('data/' + 'current_money.txt', 'r') as m:
+        money = m.read()
+    with open('data/' + 'current_lifes.txt', 'r') as l:
+        lifes = l.read()
+    with open("data/" + 'current_level.txt', 'r') as current:
+        level = current.read()
+    font = pygame.font.Font(None, 90)
+    font2 = pygame.font.Font(None, 60)
+    text_coord = 50
+    fon = pygame.transform.scale(load_image('fon2.jpg'), (WIDTH, HEIGHT))
+    moving = True
+    sprites_for_moving = []
+    while moving:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+        for i in range(len(loaded_level)):
+            for j in range(len(loaded_level[0])):
+                if i != len(loaded_level) - 1:
+                    if loaded_level[i + 1][j] == '' and loaded_level[i][j] != '':
+                        for _ in tiles_group:
+                            if _.rect.x == tile_width * j + 50 and (
+                                _.rect.y == tile_height * i + 120) and (
+                                    _.image != empty_image):
+                                if _ not in sprites_for_moving:
+                                    sprites_for_moving.append([_, i + 1, j])
+                    elif i == 0 and loaded_level[i][j] == '':
+                        loaded_level[i][j] = str(random.randint(0, 7))
+                        tiles_group.empty()
+                        generate_level(loaded_level)
+        while True:
+            for i in sprites_for_moving:
+                i[0].rect = i[0].rect.move(0, 5)
+                if i[0].rect.y == tile_height * i[1] + 120:
+                    sprites_for_moving.remove(i)
+                    loaded_level[i[1]][i[2]] = loaded_level[i[1] - 1][i[2]]
+                    loaded_level[i[1] - 1][i[2]] = ''
+            screen.fill((255, 255, 255))
+            screen.blit(fon, (0, 0))
+            string_rendered = font.render(str(lifes), 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 30
+            intro_rect.top = text_coord
+            intro_rect.x = 50
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+            string_rendered = font.render(str(money), 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 30
+            intro_rect.top = text_coord
+            intro_rect.x = 540 - len(money) * 20
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+            string_rendered = font2.render('Уровень ' + str(level), 1,
+                                          pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 100
+            intro_rect.top = text_coord
+            intro_rect.x = 720
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+            string_rendered = font2.render('Ходы: ' + str(moves), 1,
+                                          pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 150
+            intro_rect.top = text_coord
+            intro_rect.x = 720
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+            string_rendered = font2.render('Цели: ', 1,
+                                          pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 200
+            intro_rect.top = text_coord
+            intro_rect.x = 720
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+            done_group.empty()
+            for i in range(len(goals)):
+                if goals[i].split()[0] != '0':
+                    string_rendered = font2.render(str(goals[i].split()[0]), 1,
+                                                  pygame.Color('yellow'))
+                    intro_rect = string_rendered.get_rect()
+                    text_coord = 300 + 100 * i
+                    intro_rect.top = text_coord
+                    intro_rect.x = 720
+                    text_coord += intro_rect.height
+                    screen.blit(string_rendered, intro_rect)
+                else:
+                    done = pygame.sprite.Sprite(all_sprites, done_group)
+                    done.image = load_image('done.png')
+                    done.rect = done.image.get_rect()
+                    done.rect.x = 720
+                    done.rect.y = 290 + 100 * i
+            string_rendered = font.render(str(points), 1,
+                                      pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 30
+            intro_rect.top = text_coord
+            intro_rect.x = 250
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+            heart_group.draw(screen)
+            moneta_group.draw(screen)
+            goal_group.draw(screen)
+            tiles_group.draw(screen)
+            done_group.draw(screen)
+            pygame.display.flip()
+            clock.tick(FPS)
+            if len(sprites_for_moving) == 0:
+                break
+        kolvo = 0
+        for i in range(len(loaded_level)):
+            for j in range(len(loaded_level[0])):
+                if loaded_level[i][j] == '':
+                    kolvo += 1
+        if kolvo == 0:
+            moving = False
+    return loaded_level
 
 def start_screen():
     intro_text = ["Добро пожаловать в игру", "",
@@ -623,11 +789,15 @@ tile_images = ['apple1.png', 'cucumber1.png', 'kiwi1.png',
                 'lemon1.png', 'lichi1.png', 'pear1.png',
                 'strawberry1.png', 'watermelon1.png']
 
+lightning_tile_images = ['apple3.png', 'cucumber3.png', 'kiwi3.png',
+                'lemon3.png', 'lichi3.png', 'pear3.png',
+                'strawberry3.png', 'watermelon3.png']
+
 play_image = load_image('play.png')
 heart_image = load_image('heart2.png')
 moneta_image = load_image('moneta2.png')
-empty_image = load_image('empty1.png')
-tile_width = tile_height = 79
+empty_image = pygame.transform.scale(load_image('empty.png'), (80, 80))
+tile_width = tile_height = 80
 
 
 class Tile(pygame.sprite.Sprite):
@@ -641,8 +811,8 @@ class Tile(pygame.sprite.Sprite):
             tile_width * pos_x + 50, tile_height * pos_y + 120)
     def get_event(self, event):
         if self.rect.collidepoint(event.pos):
-            x = int((event.pos[0] - 50) / 79)
-            y = int((event.pos[1] - 120) / 79)
+            x = int((event.pos[0] - 50) / 80)
+            y = int((event.pos[1] - 120) / 80)
             return True, x, y
         return False, None, None
 
@@ -675,7 +845,10 @@ moneta_group = pygame.sprite.Group()
 
 goal_group = pygame.sprite.Group()
 
+done_group = pygame.sprite.Group()
+
 def generate_level(level):
+    #print('i am in generate_level')
     x, y = None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
@@ -695,8 +868,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    tiles_group.draw(screen)
-    play_group.draw(screen)
+    #tiles_group.draw(screen)
+    #play_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 terminate()
