@@ -15,6 +15,7 @@ FPS = 100
 tile_width = tile_height = 50
 
 points = 0
+all_points = 0
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -36,6 +37,9 @@ def terminate():
     sys.exit()
 
 def start_new():
+    global points
+    points = 0
+    print('начали новый уровень')
     with open("data/" + 'current_level.txt', 'r') as cur:
         level = cur.read()
     with open('data/' + 'current_lifes.txt', 'r') as l:
@@ -90,6 +94,7 @@ def start_new():
     pygame.display.flip()
     heart_group.remove(heart)
     moneta_group.remove(moneta)
+    heart_group.empty()
 
     while True:
         for event in pygame.event.get():
@@ -122,6 +127,7 @@ def game():
 
     fon = pygame.transform.scale(load_image('fon2.jpg'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
+    heart_group.empty()
 
     heart = pygame.sprite.Sprite(all_sprites, heart_group)
     heart.image = heart_image
@@ -196,7 +202,7 @@ def game():
         screen.blit(string_rendered, intro_rect)
         goal = pygame.sprite.Sprite(all_sprites, goal_group)
         goal.image = load_image(tile_images[int(goals[i].split()[1])])
-        goal.rect = heart.image.get_rect()
+        goal.rect = goal.image.get_rect()
         goal.rect.x = intro_rect.x + 70
         goal.rect.y = text_coord - 60
 
@@ -208,7 +214,13 @@ def game():
     loaded_level = [list(i) for i in loaded_level]
     first = True
 
-    while moves != 0:
+    while moves != '0':
+        goals_number = 0
+        for i in goals:
+            goals_number += int(i.split()[0])
+        if goals_number == 0:
+            win(level, money)
+            return #победа
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
@@ -264,8 +276,6 @@ def game():
                                     last = _
                                     first = False
                             break
-
-
 
         screen.fill((255, 255, 255))
         screen.blit(fon, (0, 0))
@@ -341,6 +351,18 @@ def game():
         done_group.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
+
+    if moves == '0':
+        goals_number = 0
+        for i in goals:
+            goals_number += int(i.split()[0])
+        if goals_number != 0:
+            lose(level, money, lifes)
+            return #поражение
+        else:
+            win(level, money)
+            return #победа
+
 
 def change(first, second, loaded_level, cur, last, moves, goals):
     #print('i am in change')
@@ -524,17 +546,25 @@ def change(first, second, loaded_level, cur, last, moves, goals):
             intro_rect.x = 720
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
+            done_group.empty()
             for i in range(len(goals)):
-                string_rendered = font2.render(str(goals[i].split()[0]), 1,
-                                              pygame.Color('yellow'))
-                intro_rect = string_rendered.get_rect()
-                text_coord = 300 + 100 * i
-                intro_rect.top = text_coord
-                intro_rect.x = 720
-                text_coord += intro_rect.height
-                screen.blit(string_rendered, intro_rect)
+                if goals[i].split()[0] != '0':
+                    string_rendered = font2.render(str(goals[i].split()[0]), 1,
+                                                  pygame.Color('yellow'))
+                    intro_rect = string_rendered.get_rect()
+                    text_coord = 300 + 100 * i
+                    intro_rect.top = text_coord
+                    intro_rect.x = 720
+                    text_coord += intro_rect.height
+                    screen.blit(string_rendered, intro_rect)
+                else:
+                    done = pygame.sprite.Sprite(all_sprites, done_group)
+                    done.image = load_image('done.png')
+                    done.rect = done.image.get_rect()
+                    done.rect.x = 720
+                    done.rect.y = 290 + 100 * i
             string_rendered = font.render(str(points), 1,
-                                  pygame.Color('yellow'))
+                              pygame.Color('yellow'))
             intro_rect = string_rendered.get_rect()
             text_coord = 30
             intro_rect.top = text_coord
@@ -545,6 +575,7 @@ def change(first, second, loaded_level, cur, last, moves, goals):
             moneta_group.draw(screen)
             goal_group.draw(screen)
             tiles_group.draw(screen)
+            done_group.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
             if pr_coords == (last.rect):
@@ -740,7 +771,195 @@ def falling(loaded_level, moves, goals):
             moving = False
     return loaded_level
 
+
+def win(level, money):
+    global all_points
+
+    fon = pygame.transform.scale(load_image('fon3.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    pygame.draw.rect(screen, (255, 0, 0), (100, 100, 800, 600))
+    font = pygame.font.Font(None, 90)
+    font2 = pygame.font.Font(None, 50)
+    string_rendered = font.render('Уровень ' + str(level) + ' пройден !', 1,
+                                  pygame.Color('yellow'))
+    intro_rect = string_rendered.get_rect()
+    text_coord = 180
+    intro_rect.top = text_coord
+    intro_rect.x = 170
+    text_coord += intro_rect.height
+    screen.blit(string_rendered, intro_rect)
+    string_rendered = font.render('+ 20', 1,
+                                  pygame.Color('yellow'))
+    intro_rect = string_rendered.get_rect()
+    text_coord = 320
+    intro_rect.top = text_coord
+    intro_rect.x = 170
+    text_coord += intro_rect.height
+    screen.blit(string_rendered, intro_rect)
+    moneta_group.empty()
+    moneta = pygame.sprite.Sprite(all_sprites, moneta_group)
+    moneta.image = moneta_image
+    moneta.rect = moneta.image.get_rect()
+    moneta.rect.x = 320
+    moneta.rect.y = 310
+    moneta_group.draw(screen)
+    pygame.display.flip()
+    moneta_group.remove(moneta)
+    heart_group.empty()
+    all_sprites.empty()
+    tiles_group.empty()
+    goal_group.empty()
+    string_rendered = font2.render('Чтобы продолжить нажмите пробел', 1,
+                                  pygame.Color('yellow'))
+    intro_rect = string_rendered.get_rect()
+    text_coord = 550
+    intro_rect.top = text_coord
+    intro_rect.x = 180
+    text_coord += intro_rect.height
+    screen.blit(string_rendered, intro_rect)
+
+    all_points += points
+    with open("data/" + 'all_points.txt', 'r') as wp:
+        current_points = wp.read()
+    with open('data/' + 'current_money.txt', 'w') as m:
+        m.write(str(int(money) + 20))
+    with open("data/" + 'current_level.txt', 'w') as current:
+        current.write(str(int(level) + 1))
+    with open("data/" + 'all_points.txt', 'w') as p:
+        p.write(str(int(current_points) + all_points))
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    start_new()
+                    return  # начинаем игру
+        pygame.display.flip()
+        clock.tick(FPS)
+
+def lose(level, money, lifes):
+    global all_points
+    if int(lifes) - 1 != 0:
+        fon = pygame.transform.scale(load_image('fon3.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        pygame.draw.rect(screen, (255, 0, 0), (100, 100, 800, 600))
+        font = pygame.font.Font(None, 90)
+        font2 = pygame.font.Font(None, 50)
+        string_rendered = font.render('Уровень ' + str(level) + ' не пройден !', 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 180
+        intro_rect.top = text_coord
+        intro_rect.x = 150
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font.render('- 1', 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 320
+        intro_rect.top = text_coord
+        intro_rect.x = 170
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        heart_group.empty()
+        heart = pygame.sprite.Sprite(all_sprites, heart_group)
+        heart.image = heart_image
+        heart.rect = heart.image.get_rect()
+        heart.rect.x = 320
+        heart.rect.y = 310
+        heart_group.draw(screen)
+        string_rendered = font2.render('Нажмите пробел чтобы попробовать еще раз', 1,
+                                       pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 550
+        intro_rect.top = text_coord
+        intro_rect.x = 115
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        moneta_group.empty()
+        pygame.display.flip()
+        heart_group.empty()
+        all_sprites.empty()
+        tiles_group.empty()
+        goal_group.empty()
+        with open("data/" + 'current_lifes.txt', 'w') as current:
+            current.write(str(int(lifes) - 1))
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        start_new()
+                        return  # начинаем игру
+                pygame.display.flip()
+            clock.tick(FPS)
+    else:
+        screen.fill((255, 255, 255))
+        fon = pygame.transform.scale(load_image('fon4.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 50)
+        font2 = pygame.font.Font(None, 40)
+        font3 = pygame.font.Font(None, 200)
+        string_rendered = font3.render('Поражение !', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 180
+        intro_rect.top = text_coord
+        intro_rect.x = 90
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font.render('Продолжить игру за монеты или начать заново ?', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 400
+        intro_rect.top = text_coord
+        intro_rect.x = 90
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font2.render('Текущий счет: ' + str(money) + ' монет', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 500
+        intro_rect.top = text_coord
+        intro_rect.x = 300
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        restart = Restart()
+        restart_group.draw(screen)
+        continue_ = Continue()
+        continue_group.draw(screen)
+        moneta_group.empty()
+        pygame.display.flip()
+        heart_group.empty()
+        tiles_group.empty()
+        goal_group.empty()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    a = continue_.get_event(event)
+                    b = restart.get_event(event)
+                    if b:
+                        play_group.empty()
+                        pygame.display.flip()
+                        all_sprites.empty()
+                        tiles_group.empty()
+                        restart_group.empty()
+                        continue_group.empty()
+                        start_screen()
+                        return  # начинаем игру
+            pygame.display.flip()
+            clock.tick(FPS)
+
+
+
+
 def start_screen():
+    global points
+    points = 0
     intro_text = ["Добро пожаловать в игру", "",
                   "Правила игры"]
     fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
@@ -797,6 +1016,8 @@ play_image = load_image('play.png')
 heart_image = load_image('heart2.png')
 moneta_image = load_image('moneta2.png')
 empty_image = pygame.transform.scale(load_image('empty.png'), (80, 80))
+restart_image = load_image('restart.png')
+continue_image = load_image('continue.png')
 tile_width = tile_height = 80
 
 
@@ -828,6 +1049,28 @@ class Play(pygame.sprite.Sprite):
             return True
         return False
 
+class Restart(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(restart_group, all_sprites)
+        self.image = restart_image
+        self.rect = self.image.get_rect().move(100, 650)
+
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            return True
+        return False
+
+class Continue(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(continue_group, all_sprites)
+        self.image = continue_image
+        self.rect = self.image.get_rect().move(320, 650)
+
+    def get_event(self, event):
+        if self.rect.collidepoint(event.pos):
+            return True
+        return False
+
 # основной персонаж
 player = None
 
@@ -846,6 +1089,10 @@ moneta_group = pygame.sprite.Group()
 goal_group = pygame.sprite.Group()
 
 done_group = pygame.sprite.Group()
+
+restart_group = pygame.sprite.Group()
+
+continue_group = pygame.sprite.Group()
 
 def generate_level(level):
     #print('i am in generate_level')
