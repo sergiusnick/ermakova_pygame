@@ -7,6 +7,10 @@ pygame.init()
 WIDTH, HEIGHT = 1000, 900
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen.fill((255, 255, 255))
+pygame.display.set_caption('Три в ряд')
+sound1 = pygame.mixer.Sound("data/" + 'pop.wav')
+sound2 = pygame.mixer.Sound("data/" + 'lose1.wav')
+sound3 = pygame.mixer.Sound("data/" + 'cheer2.wav')
 
 clock = pygame.time.Clock()
 running = True
@@ -20,6 +24,7 @@ all_points = 0
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
+        #print(fullname)
         image = pygame.image.load(fullname)
     except pygame.error as message:
         print('Cannot load image:', name)
@@ -39,62 +44,67 @@ def terminate():
 def start_new():
     global points
     points = 0
-    print('начали новый уровень')
     with open("data/" + 'current_level.txt', 'r') as cur:
         level = cur.read()
     with open('data/' + 'current_lifes.txt', 'r') as l:
         lifes = l.read()
     with open('data/' + 'current_money.txt', 'r') as m:
         money = m.read()
-    screen.fill((255, 255, 255))
-    fon = pygame.transform.scale(load_image('fon1.jpg'), (WIDTH, HEIGHT))
-    play = Play()
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 90)
-    text_coord = 50
-    pygame.draw.ellipse(screen, (255, 0, 0), (150, 300, 650, 200),)
-    string_rendered = font.render('Уровень ' + str(level), 1,
-                                  pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 360
-    intro_rect.top = text_coord
-    intro_rect.x = 330
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
+    if int(lifes) > 0:
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.load("data/" + 'fon_music.mp3')
+            pygame.mixer.music.play(-1)
+        screen.fill((255, 255, 255))
+        fon = pygame.transform.scale(load_image('fon1.jpg'), (WIDTH, HEIGHT))
+        play = Play()
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 90)
+        text_coord = 50
+        pygame.draw.ellipse(screen, (255, 0, 0), (150, 300, 650, 200),)
+        string_rendered = font.render('Уровень ' + str(level), 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 360
+        intro_rect.top = text_coord
+        intro_rect.x = 330
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
 
-    heart = pygame.sprite.Sprite(all_sprites, heart_group)
-    heart.image = heart_image
-    heart.rect = heart.image.get_rect()
-    heart.rect.x = 170
-    heart.rect.y = 50
-    string_rendered = font.render(str(lifes), 1, pygame.Color('black'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 65
-    intro_rect.top = text_coord
-    intro_rect.x = 90
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
+        heart = pygame.sprite.Sprite(all_sprites, heart_group)
+        heart.image = heart_image
+        heart.rect = heart.image.get_rect()
+        heart.rect.x = 170
+        heart.rect.y = 50
+        string_rendered = font.render(str(lifes), 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 65
+        intro_rect.top = text_coord
+        intro_rect.x = 90
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
 
-    moneta = pygame.sprite.Sprite(all_sprites, moneta_group)
-    moneta.image = moneta_image
-    moneta.rect = moneta.image.get_rect()
-    moneta.rect.x = 800
-    moneta.rect.y = 50
-    string_rendered = font.render(str(money), 1, pygame.Color('black'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 70
-    intro_rect.top = text_coord
-    intro_rect.x = 740 - len(money) * 20
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
+        moneta = pygame.sprite.Sprite(all_sprites, moneta_group)
+        moneta.image = moneta_image
+        moneta.rect = moneta.image.get_rect()
+        moneta.rect.x = 800
+        moneta.rect.y = 50
+        string_rendered = font.render(str(money), 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 70
+        intro_rect.top = text_coord
+        intro_rect.x = 740 - len(money) * 20
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
 
-    heart_group.draw(screen)
-    play_group.draw(screen)
-    moneta_group.draw(screen)
-    pygame.display.flip()
-    heart_group.remove(heart)
-    moneta_group.remove(moneta)
-    heart_group.empty()
+        heart_group.draw(screen)
+        play_group.draw(screen)
+        moneta_group.draw(screen)
+        pygame.display.flip()
+        heart_group.remove(heart)
+        moneta_group.remove(moneta)
+        heart_group.empty()
+    else:
+        lose(level, money, lifes)
 
     while True:
         for event in pygame.event.get():
@@ -182,12 +192,12 @@ def game():
     text_coord += intro_rect.height
     screen.blit(string_rendered, intro_rect)
 
-    string_rendered = font2.render(str(points), 1,
+    string_rendered = font.render(str(points), 1,
                                   pygame.Color('yellow'))
     intro_rect = string_rendered.get_rect()
-    text_coord = 200
+    text_coord = 30
     intro_rect.top = text_coord
-    intro_rect.x = 200
+    intro_rect.x = 250
     text_coord += intro_rect.height
     screen.blit(string_rendered, intro_rect)
 
@@ -223,6 +233,8 @@ def game():
             return #победа
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                with open("data/" + 'current_lifes.txt', 'w') as current:
+                    current.write(str(int(lifes) - 1))
                 terminate()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 for _ in tiles_group:
@@ -257,6 +269,7 @@ def game():
                                     while is_there_a_combination(loaded_level):
                                         loaded_level, goals = destruction(loaded_level, goals)
                                         tiles_group.empty()
+                                        sound1.play()
                                         generate_level(loaded_level)
                                         loaded_level = falling(loaded_level, moves, goals)
                                     if loaded_level != new_loaded_level:
@@ -276,7 +289,30 @@ def game():
                                     last = _
                                     first = False
                             break
-
+        font5 = pygame.font.Font(None, 150)
+        if need_to_shuffle(loaded_level):
+            tiles_group.empty()
+            for i in loaded_level:
+                random.shuffle(i)
+            random.shuffle(loaded_level)
+            pygame.draw.rect(screen, pygame.Color('red'), (100, 320, 550, 150))
+            string_rendered = font.render('Перемешиваем', 1, pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 360
+            intro_rect.top = text_coord
+            intro_rect.x = 140
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+            pygame.display.flip()
+            generate_level(loaded_level)
+            for i in range(10):
+                clock.tick(10)
+            while is_there_a_combination(loaded_level):
+                loaded_level, goals = destruction(loaded_level, goals)
+                tiles_group.empty()
+                sound1.play()
+                generate_level(loaded_level)
+                loaded_level = falling(loaded_level, moves, goals)
         screen.fill((255, 255, 255))
         screen.blit(fon, (0, 0))
         string_rendered = font.render(str(lifes), 1, pygame.Color('black'))
@@ -365,7 +401,6 @@ def game():
 
 
 def change(first, second, loaded_level, cur, last, moves, goals):
-    #print('i am in change')
     with open('data/' + 'current_money.txt', 'r') as m:
         money = m.read()
     with open('data/' + 'current_lifes.txt', 'r') as l:
@@ -584,7 +619,6 @@ def change(first, second, loaded_level, cur, last, moves, goals):
 
 
 def is_there_a_combination(level):
-    #print('i am in is_there_a_combination')
     horizontal = [''.join(i) for i in level]
     vertical = []
     for i in range(len(level[0])):
@@ -636,7 +670,6 @@ def destruction(level, goals):
 
 
 def check_seq(level, i, j, d = 0, k = 1):
-    #print('i am in check_seq')
     if d == 0:
         if j < len(level[i]) - 1 and level[i][j] == level[i][j + 1]:
             k += 1
@@ -772,75 +805,297 @@ def falling(loaded_level, moves, goals):
     return loaded_level
 
 
+def need_to_shuffle(level):
+    combination = False
+    for i in range(len(level)):
+        for j in range(len(level[0])):
+            loaded_level = copy.deepcopy(level)
+            if i == 0 and j == 0:
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif i == 0 and j == len(level) - 1:
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif i == len(level) - 1 and j == 0:
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif i == len(level) - 1 and j == len(level) - 1:
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif i == 0:
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif j == 0:
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif i == len(level) - 1:
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            elif j == len(level) - 1:
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+            else:
+                loaded_level[i][j - 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j - 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i + 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i + 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i - 1][j] = loaded_level[i][j]
+                loaded_level[i][j] = level[i - 1][j]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+                loaded_level = copy.deepcopy(level)
+                loaded_level[i][j + 1] = loaded_level[i][j]
+                loaded_level[i][j] = level[i][j + 1]
+                if is_there_a_combination(loaded_level):
+                    combination = True
+    if combination:
+        return False
+    else:
+        return True
+
+
+
+
 def win(level, money):
     global all_points
-
-    fon = pygame.transform.scale(load_image('fon3.jpg'), (WIDTH, HEIGHT))
-    screen.blit(fon, (0, 0))
-    pygame.draw.rect(screen, (255, 0, 0), (100, 100, 800, 600))
-    font = pygame.font.Font(None, 90)
-    font2 = pygame.font.Font(None, 50)
-    string_rendered = font.render('Уровень ' + str(level) + ' пройден !', 1,
-                                  pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 180
-    intro_rect.top = text_coord
-    intro_rect.x = 170
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
-    string_rendered = font.render('+ 20', 1,
-                                  pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 320
-    intro_rect.top = text_coord
-    intro_rect.x = 170
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
-    moneta_group.empty()
-    moneta = pygame.sprite.Sprite(all_sprites, moneta_group)
-    moneta.image = moneta_image
-    moneta.rect = moneta.image.get_rect()
-    moneta.rect.x = 320
-    moneta.rect.y = 310
-    moneta_group.draw(screen)
-    pygame.display.flip()
-    moneta_group.remove(moneta)
-    heart_group.empty()
-    all_sprites.empty()
-    tiles_group.empty()
-    goal_group.empty()
-    string_rendered = font2.render('Чтобы продолжить нажмите пробел', 1,
-                                  pygame.Color('yellow'))
-    intro_rect = string_rendered.get_rect()
-    text_coord = 550
-    intro_rect.top = text_coord
-    intro_rect.x = 180
-    text_coord += intro_rect.height
-    screen.blit(string_rendered, intro_rect)
-
     all_points += points
-    with open("data/" + 'all_points.txt', 'r') as wp:
-        current_points = wp.read()
-    with open('data/' + 'current_money.txt', 'w') as m:
-        m.write(str(int(money) + 20))
-    with open("data/" + 'current_level.txt', 'w') as current:
-        current.write(str(int(level) + 1))
-    with open("data/" + 'all_points.txt', 'w') as p:
-        p.write(str(int(current_points) + all_points))
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                terminate()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                    start_new()
-                    return  # начинаем игру
+    if int(level) != 10:
+        pygame.mixer.music.stop()
+        sound3.play()
+        fon = pygame.transform.scale(load_image('fon3.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        pygame.draw.rect(screen, (255, 0, 0), (100, 100, 800, 600))
+        font = pygame.font.Font(None, 90)
+        font2 = pygame.font.Font(None, 50)
+        string_rendered = font.render('Уровень ' + str(level) + ' пройден !', 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 180
+        intro_rect.top = text_coord
+        intro_rect.x = 170
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font.render('+ 20', 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 320
+        intro_rect.top = text_coord
+        intro_rect.x = 170
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        moneta_group.empty()
+        moneta = pygame.sprite.Sprite(all_sprites, moneta_group)
+        moneta.image = moneta_image
+        moneta.rect = moneta.image.get_rect()
+        moneta.rect.x = 320
+        moneta.rect.y = 310
+        moneta_group.draw(screen)
         pygame.display.flip()
-        clock.tick(FPS)
+        moneta_group.remove(moneta)
+        heart_group.empty()
+        all_sprites.empty()
+        tiles_group.empty()
+        goal_group.empty()
+        string_rendered = font2.render('Чтобы продолжить нажмите пробел', 1,
+                                      pygame.Color('yellow'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 550
+        intro_rect.top = text_coord
+        intro_rect.x = 180
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        with open("data/" + 'all_points.txt', 'r') as wp:
+            current_points = wp.read()
+        with open('data/' + 'current_money.txt', 'w') as m:
+            m.write(str(int(money) + 20))
+        with open("data/" + 'current_level.txt', 'w') as current:
+            current.write(str(int(level) + 1))
+        with open("data/" + 'all_points.txt', 'w') as p:
+            p.write(str(int(current_points) + all_points))
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_SPACE:
+                        start_new()
+                        return  # начинаем игру
+            pygame.display.flip()
+            clock.tick(FPS)
+    elif int(level) == 10:
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load("data/" + 'victory1.mp3')
+        pygame.mixer.music.play(-1)
+        with open("data/" + 'all_points.txt', 'r') as wp:
+            current_points = wp.read()
+        fon = pygame.transform.scale(load_image('fon5.jpg'), (WIDTH, HEIGHT))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 50)
+        font2 = pygame.font.Font(None, 40)
+        font3 = pygame.font.Font(None, 200)
+        string_rendered = font3.render('Победа !', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 100
+        intro_rect.top = text_coord
+        intro_rect.x = 90
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font.render('Ваш итоговый счет: ' + str(int(current_points) + all_points) + ' очков', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 300
+        intro_rect.top = text_coord
+        intro_rect.x = 90
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        string_rendered = font.render('Топ-3 очков: ', 1,
+                                      pygame.Color('white'))
+        intro_rect = string_rendered.get_rect()
+        text_coord = 380
+        intro_rect.top = text_coord
+        intro_rect.x = 110
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
+        restart = Restart()
+        restart_group.draw(screen)
+        moneta_group.empty()
+        pygame.display.flip()
+        heart_group.empty()
+        tiles_group.empty()
+        goal_group.empty()
+        with open('data/' + 'current_money.txt', 'w') as m:
+            m.write(str(int(money) + 20))
+        with open("data/" + 'current_level.txt', 'w') as current:
+            current.write(str(1))
+        with open("data/" + 'all_points.txt', 'w') as p:
+            p.write(str(0))
+        with open("data/" + 'top_points.txt', 'a') as t:
+            t.write(str(int(current_points) + all_points))
+            t.write(' ')
+        with open("data/" + 'current_lifes.txt', 'w') as current:
+            current.write(str(5))
+        with open("data/" + 'top_points.txt', 'r') as t:
+            top_scores = sorted([int(i) for i in t.read().split()], reverse=True)
+        for i in range(3):
+            if i < len(top_scores):
+                string_rendered = font.render(str(i + 1) + '. ' + str(top_scores[i]) + ' очков', 1,
+                                              pygame.Color('white'))
+            else:
+                string_rendered = font.render(str(i + 1) + '. ' + '-', 1,
+                                              pygame.Color('white'))
+            intro_rect = string_rendered.get_rect()
+            text_coord = 450 + 50 * i
+            intro_rect.top = text_coord
+            intro_rect.x = 100
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    b = restart.get_event(event)
+                    if b:
+                        play_group.empty()
+                        pygame.display.flip()
+                        all_sprites.empty()
+                        tiles_group.empty()
+                        restart_group.empty()
+                        continue_group.empty()
+                        pygame.mixer.music.stop()
+                        start_screen()
+                        return  # начинаем игру
+            pygame.display.flip()
+            clock.tick(FPS)
+
 
 def lose(level, money, lifes):
     global all_points
-    if int(lifes) - 1 != 0:
+    if int(lifes) - 1 > 0:
         fon = pygame.transform.scale(load_image('fon3.jpg'), (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
         pygame.draw.rect(screen, (255, 0, 0), (100, 100, 800, 600))
@@ -883,6 +1138,8 @@ def lose(level, money, lifes):
         all_sprites.empty()
         tiles_group.empty()
         goal_group.empty()
+        pygame.mixer.music.stop()
+        sound2.play()
         with open("data/" + 'current_lifes.txt', 'w') as current:
             current.write(str(int(lifes) - 1))
         while True:
@@ -896,6 +1153,9 @@ def lose(level, money, lifes):
                 pygame.display.flip()
             clock.tick(FPS)
     else:
+        pygame.mixer.music.stop()
+        pygame.mixer.music.load("data/" + 'lose2.mp3')
+        pygame.mixer.music.play(-1)
         screen.fill((255, 255, 255))
         fon = pygame.transform.scale(load_image('fon4.jpg'), (WIDTH, HEIGHT))
         screen.blit(fon, (0, 0))
@@ -943,40 +1203,96 @@ def lose(level, money, lifes):
                     a = continue_.get_event(event)
                     b = restart.get_event(event)
                     if b:
+                        with open("data/" + 'current_level.txt', 'w') as current:
+                            current.write(str(1))
+                        with open("data/" + 'all_points.txt', 'w') as p:
+                            p.write(str(0))
+                        with open("data/" + 'current_lifes.txt', 'w') as current:
+                            current.write(str(5))
                         play_group.empty()
                         pygame.display.flip()
                         all_sprites.empty()
                         tiles_group.empty()
                         restart_group.empty()
                         continue_group.empty()
+                        pygame.mixer.music.stop()
                         start_screen()
                         return  # начинаем игру
+                    if a:
+                        if int(money) >= 100:
+                            with open('data/' + 'current_money.txt', 'w') as m:
+                                m.write(str(int(money) - 100))
+                            with open("data/" + 'current_lifes.txt', 'w') as current:
+                                current.write(str(1))
+                            play_group.empty()
+                            pygame.display.flip()
+                            all_sprites.empty()
+                            tiles_group.empty()
+                            restart_group.empty()
+                            continue_group.empty()
+                            pygame.mixer.music.stop()
+                            start_new()
+                            return  # начинаем игру
+                        else:
+                            string_rendered = font2.render('Недостаточно средств', 1,
+                                                          pygame.Color('red'))
+                            intro_rect = string_rendered.get_rect()
+                            text_coord = 830
+                            intro_rect.top = text_coord
+                            intro_rect.x = 500
+                            text_coord += intro_rect.height
+                            screen.blit(string_rendered, intro_rect)
+
             pygame.display.flip()
             clock.tick(FPS)
 
 
-
-
 def start_screen():
     global points
-    points = 0
-    intro_text = ["Добро пожаловать в игру", "",
-                  "Правила игры"]
-    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
-    play = Play()
-    screen.blit(fon, (0, 0))
-    font = pygame.font.Font(None, 50)
-    text_coord = 50
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('yellow'))
+    with open("data/" + 'current_level.txt', 'r') as cur:
+        level = cur.read()
+    with open('data/' + 'current_lifes.txt', 'r') as l:
+        lifes = l.read()
+    with open('data/' + 'current_money.txt', 'r') as m:
+        money = m.read()
+    if int(lifes) > 0:
+        pygame.mixer.music.load("data/" + 'fon_music.mp3')
+        pygame.mixer.music.play(-1)
+        points = 0
+        intro_text = ["Правила игры.", "",
+                      'Ваши цели - фрукты, ягоды и овощи. Чтобы пройти уровень, соберите нужное', "",
+                      'количество целей. Собирать их вы можете составляя ряды длиной 3 и более. Помните, что', "",
+                      'количество ходов ограничено. В начале игры у вас 5 жизней. Если вы не соберете все цели,', "",
+                      'у вас отнимется одна жизнь и вы сможете попробовать пройти уровень еще раз. Когда', "",
+                      'у вас закончатся жизни - вы проиграли, и начинаете с первого уровня. Но не переживайте,', "",
+                      'вы всегда можете купить дополнительную жизнь за 100 монет ! Если вы собрали все цели,', "",
+                      'то поздравляю - вы переходите на следующий уровень и получаете 20 монет. Проходя уровни', "",
+                      'вы собираете очки, которые суммируются. Пройдя все десять уровней вы побеждаете.', ""]
+
+        fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+        play = Play()
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 30)
+        font2 = pygame.font.Font(None, 50)
+        text_coord = 50
+        string_rendered = font2.render('Добро пожаловать в игру !', 1, pygame.Color('yellow'))
         intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
+        intro_rect.top = 20
         intro_rect.x = 10
         text_coord += intro_rect.height
         screen.blit(string_rendered, intro_rect)
-    play_group.draw(screen)
-    pygame.display.flip()
+        for line in intro_text:
+            string_rendered = font.render(line, 1, pygame.Color('yellow'))
+            intro_rect = string_rendered.get_rect()
+            text_coord += 5
+            intro_rect.top = text_coord
+            intro_rect.x = 10
+            text_coord += intro_rect.height
+            screen.blit(string_rendered, intro_rect)
+        play_group.draw(screen)
+        pygame.display.flip()
+    else:
+        lose(level, money, lifes)
 
     while True:
         for event in pygame.event.get():
@@ -1001,7 +1317,6 @@ def load_level():
         level_map = [line.strip() for line in mapFile]
     level = (list(level_map))
     return level[:8], level[8], level[9:]
-
 
 
 tile_images = ['apple1.png', 'cucumber1.png', 'kiwi1.png',
@@ -1030,6 +1345,7 @@ class Tile(pygame.sprite.Sprite):
             self.image = empty_image
         self.rect = self.image.get_rect().move(
             tile_width * pos_x + 50, tile_height * pos_y + 120)
+
     def get_event(self, event):
         if self.rect.collidepoint(event.pos):
             x = int((event.pos[0] - 50) / 80)
@@ -1049,6 +1365,7 @@ class Play(pygame.sprite.Sprite):
             return True
         return False
 
+
 class Restart(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(restart_group, all_sprites)
@@ -1059,6 +1376,7 @@ class Restart(pygame.sprite.Sprite):
         if self.rect.collidepoint(event.pos):
             return True
         return False
+
 
 class Continue(pygame.sprite.Sprite):
     def __init__(self):
@@ -1071,9 +1389,9 @@ class Continue(pygame.sprite.Sprite):
             return True
         return False
 
+
 # основной персонаж
 player = None
-
 # группы спрайтов
 
 all_sprites = pygame.sprite.Group()
@@ -1094,14 +1412,15 @@ restart_group = pygame.sprite.Group()
 
 continue_group = pygame.sprite.Group()
 
+
 def generate_level(level):
-    #print('i am in generate_level')
     x, y = None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
             Tile(level[y][x], x, y)
-    # вернем игрока, а также размер поля в клетках
+    # вернем размер поля в клетках
     return x, y
+
 
 with open("data/" + 'current_level.txt', 'r') as cur:
     level = cur.read()
@@ -1115,8 +1434,6 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    #tiles_group.draw(screen)
-    #play_group.draw(screen)
     clock.tick(FPS)
     pygame.display.flip()
 terminate()
